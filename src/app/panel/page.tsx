@@ -637,7 +637,7 @@ function PanelContent() {
 // ── Ruta raíz: controla auth ──────────────────────────────────────────────────
 function PanelRoute() {
   const [authed, setAuthed] = useState(
-    () => sessionStorage.getItem("panel_auth") === "ok"
+    () => typeof window !== "undefined" && sessionStorage.getItem("panel_auth") === "ok"
   );
   if (!authed) return <LoginScreen onAuth={() => setAuthed(true)} />;
   return <PanelContent />;
