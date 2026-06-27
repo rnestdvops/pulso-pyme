@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 /**
  * /panel — Panel ANTEL de Adaptabilidad del Ecosistema PyME uruguayo
  *
