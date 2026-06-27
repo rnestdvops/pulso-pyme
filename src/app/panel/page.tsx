@@ -32,6 +32,8 @@ import {
 } from "recharts";
 import { usePanelData, DIM_LABELS, IA_LABELS, OCCLUSION_THRESHOLD, type Filtros } from "@/hooks/usePanelData";
 import { ScatterPanel } from "@/components/ScatterPanel";
+import { validatePanelPassword } from "./actions";
+import { PipelineSection } from "@/components/panel/PipelineSection";
 
 export default function PanelPage() {
   return <PanelRoute />;
@@ -71,14 +73,24 @@ const IA_COLOR: Record<string, string> = {
 function LoginScreen({ onAuth }: { onAuth: () => void }) {
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState(false);
+  const [pending, setPending] = useState(false);
 
-  const submit = () => {
-    const expected = process.env.NEXT_PUBLIC_OPERADOR_PASSWORD || PANEL_PASSWORD_FALLBACK;
-    if (pwd === expected) {
-      sessionStorage.setItem("panel_auth", "ok");
-      onAuth();
-    } else {
-      setError(true);
+  const submit = async () => {
+    setPending(true);
+    setError(false);
+    try {
+      const res = await validatePanelPassword(pwd);
+      if (res.ok) {
+        // Guardamos la pwd para que las server actions subsecuentes puedan
+        // re-validar contra OPERADOR_PASSWORD server-only.
+        sessionStorage.setItem("panel_pwd", pwd);
+        sessionStorage.setItem("panel_auth", "ok");
+        onAuth();
+      } else {
+        setError(true);
+      }
+    } finally {
+      setPending(false);
     }
   };
 
@@ -107,10 +119,11 @@ function LoginScreen({ onAuth }: { onAuth: () => void }) {
         <button
           type="button"
           onClick={submit}
-          className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition"
+          disabled={pending}
+          className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition disabled:opacity-60"
           style={{ backgroundColor: C.navy }}
         >
-          Ingresar
+          {pending ? "Validando…" : "Ingresar"}
         </button>
       </div>
     </main>
@@ -625,6 +638,9 @@ function PanelContent() {
 
           </div>
         )}
+
+        {/* Pipeline ANTEL — Vitrina Adaptativa + contactos (SPEC §8) */}
+        <PipelineSection />
 
         <footer className="mt-8 text-center text-[10px]" style={{ color: C.gris }}>
           ANTEL · Pulso PyME — Empresas Uruguayas Inteligentes · Datos anónimos y agregados

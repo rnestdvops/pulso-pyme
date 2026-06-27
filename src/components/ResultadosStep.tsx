@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
+import { ProximoPasoBlock } from "@/components/sugerencias/ProximoPasoBlock";
 import { pdf } from "@react-pdf/renderer";
 import { supabase } from "@/utils/supabase/client";
 import { useWizardStore } from "@/lib/wizard-store";
@@ -54,7 +55,7 @@ const DIM_TEC_LABEL: Record<string, string> = {
 };
 
 export function ResultadosStep() {
-  const { respuestas, respuestasTec, respuestaQ16, contexto, persistirEvaluacion, reset } =
+  const { respuestas, respuestasTec, respuestaQ16, contexto, persistirEvaluacion, reset, evaluacionId } =
     useWizardStore();
 
   const resultado = useMemo(() => evaluar(respuestas), [respuestas]);
@@ -381,6 +382,9 @@ export function ResultadosStep() {
           Descargar mi kit de conversación (PDF)
         </button>
       </div>
+
+      {/* Próximo paso opcional — Vitrina Adaptativa (SPEC §2.2) */}
+      {evaluacionId && <ProximoPasoBlock evaluacionId={evaluacionId} />}
 
       {/* CTA */}
       <div className="flex flex-col gap-2">
