@@ -62,12 +62,20 @@ const BLOCKS = [
     contenido: (
       <ul>
         <li>Tarda unos 12 a 15 minutos. Contestá tranquilo, sin apuro.</li>
-        <li>Es anónimo. No te pedimos nombre, empresa, ni datos personales.</li>
+        <li>
+          El diagnóstico es anónimo. No te pedimos nombre, empresa ni datos
+          personales para hacerlo.
+        </li>
         <li>
           No hay respuestas correctas ni incorrectas. Contestá lo que pasa de
           verdad, no lo que te gustaría que pasara.
         </li>
         <li>Podés repetirlo cuando quieras. La herramienta es tuya.</li>
+        <li>
+          Al final, si querés, te mostramos soluciones que podrían acompañar tu
+          pulso. Es opcional, no afecta tu diagnóstico, y solo si decidís pedir
+          contacto te pedimos datos.
+        </li>
       </ul>
     ),
   },
