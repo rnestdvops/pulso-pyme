@@ -12,13 +12,12 @@
 --  · Doble opt-in: la primera tabla no captura PII; la segunda sí, con consent.
 --  · El cruce con evaluaciones es opcional (evaluacion_id_compartida nullable).
 --
--- DEUDA EXPLÍCITA — privacidad de contact_requests:
---  RLS de select para `anon` queda abierta porque el panel operador lee
---  Supabase directo desde el cliente (no hay backend). Esto significa que
---  cualquier persona con la URL de la app puede listar nombre/email/teléfono
---  vía fetch directo a la API. La migración correcta es mover el acceso del
---  panel a una edge function autenticada por password. Ver memoria
---  [[reference-lovable-secrets]] para el contexto de auth con Lovable Cloud.
+-- ARQUITECTURA DE PRIVACIDAD (mejorada vs SPEC original):
+--  Acceso a estas tablas SOLO vía Next.js Server Actions con SUPABASE_SERVICE_ROLE_KEY.
+--  Para anon (browser-side), ambas tablas están totalmente bloqueadas — ni insert
+--  ni select. Esto significa que datos personales de las PyMEs (nombre, email,
+--  teléfono) nunca son leíbles desde el cliente, eliminando el riesgo de
+--  enumeración via curl que tenía la versión anterior del SPEC.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── sugerencias_vistas ────────────────────────────────────────────────────────
@@ -35,17 +34,10 @@ create index if not exists sugerencias_vistas_vista_at_idx   on public.sugerenci
 
 alter table public.sugerencias_vistas enable row level security;
 
-create policy "Cualquiera puede registrar que vio la vitrina"
-  on public.sugerencias_vistas for insert
-  with check (true);
+-- Sin policies para anon ni authenticated → bloqueo total para esos roles.
+-- service_role bypassea RLS por defecto; usado desde Server Actions.
 
-create policy "Lectura pública de vistas (anónimo, solo evaluacion_id)"
-  on public.sugerencias_vistas for select
-  using (true);
-
-grant select, insert on public.sugerencias_vistas to anon;
-grant select, insert on public.sugerencias_vistas to authenticated;
-grant all          on public.sugerencias_vistas to service_role;
+grant all on public.sugerencias_vistas to service_role;
 
 
 -- ── contact_requests ──────────────────────────────────────────────────────────
@@ -71,16 +63,7 @@ create index if not exists contact_requests_estado_idx     on public.contact_req
 
 alter table public.contact_requests enable row level security;
 
-create policy "Cualquiera puede solicitar contacto (segundo opt-in)"
-  on public.contact_requests for insert
-  with check (true);
+-- Sin policies para anon → cero acceso desde el browser.
+-- Toda escritura y lectura pasa por Server Actions que usan SUPABASE_SERVICE_ROLE_KEY.
 
--- DEUDA: select abierto a anon para que el panel funcione sin backend.
--- Migrar a edge function autenticada cuando Lovable Cloud lo permita.
-create policy "Lectura pública de contact_requests (DEUDA: cerrar)"
-  on public.contact_requests for select
-  using (true);
-
-grant select, insert on public.contact_requests to anon;
-grant select, insert, update on public.contact_requests to authenticated;
-grant all                    on public.contact_requests to service_role;
+grant all on public.contact_requests to service_role;
