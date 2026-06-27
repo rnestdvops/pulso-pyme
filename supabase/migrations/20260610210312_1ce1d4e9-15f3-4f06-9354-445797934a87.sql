@@ -1,0 +1,1 @@
+alter view public.scatter_ecosistema set (security_invoker = true);
