@@ -61,7 +61,11 @@ const BLOCKS = [
     titulo: "Antes de empezar",
     contenido: (
       <ul>
-        <li>Tarda unos 12 a 15 minutos. Contestá tranquilo, sin apuro.</li>
+        <li>
+          El diagnóstico tarda unos 12 a 15 minutos. Contestá tranquilo, sin
+          apuro. El paso opcional del final suma unos pocos minutos más si
+          decidís hacerlo.
+        </li>
         <li>
           El diagnóstico es anónimo. No te pedimos nombre, empresa ni datos
           personales para hacerlo.
