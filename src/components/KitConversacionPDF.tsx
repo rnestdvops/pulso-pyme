@@ -96,6 +96,9 @@ function ScatterPDF({
   );
 }
 
+import type { DimensionBaja } from "@/lib/oc-engine/recomendaciones-expandidas";
+import { PRINCIPIO_LABEL } from "@/lib/oc-engine/recomendaciones-expandidas";
+
 export interface KitPDFProps {
   contexto: { rubro: string; empleados: string; antiguedad: string; rol?: string };
   resultado: {
@@ -113,6 +116,11 @@ export interface KitPDFProps {
   resultadoIA: { estado: string; estadoLabel: string; recomendacion: string };
   puntosEcosistema: Array<{ eje_externo: number; eje_interno: number; color_tecnologia: number | null }>;
   fecha: string;
+  /**
+   * Dimensiones con score ≤ 50 (bajas), TODAS — sin límite top 3.
+   * Anexo §5.2: en PDF se incluyen todas las bajas, una página por cada una.
+   */
+  dimensionesBajasExpandidas: DimensionBaja[];
 }
 
 export function KitConversacionPDF({
@@ -122,6 +130,7 @@ export function KitConversacionPDF({
   resultadoIA,
   puntosEcosistema,
   fecha,
+  dimensionesBajasExpandidas,
 }: KitPDFProps) {
   return (
     <Document>
@@ -207,6 +216,96 @@ export function KitConversacionPDF({
         ))}
         <View style={styles.banda} />
       </Page>
+
+      {/* Páginas extendidas — una por dimensión BAJA con marco de 4 capas (Anexo §3) */}
+      {dimensionesBajasExpandidas.map((dim) => (
+        <Page key={`exp-${dim.dimensionId}`} size="A4" style={styles.page}>
+          <Text style={{ fontSize: 10, color: C.teal, fontFamily: "Helvetica-Bold", letterSpacing: 1, marginBottom: 4 }}>
+            POR DÓNDE EMPEZAR · {dim.etiqueta.toUpperCase()}
+          </Text>
+          <Text style={{ ...styles.h2, marginTop: 0 }}>{dim.etiqueta}</Text>
+          <Text style={{ ...styles.badge, backgroundColor: "#FCE7E7", color: "#A33232" }}>
+            Bajo · {dim.score}/100
+          </Text>
+
+          {/* Capa 1 — Señal */}
+          <Text style={styles.h3}>Lo que mostró tu pulso</Text>
+          <Text style={styles.body}>{dim.recomendacion.senal}</Text>
+
+          {/* Capa 2 — Desarmar idea común (opcional) */}
+          {dim.recomendacion.desarmarIdea && (
+            <>
+              <Text style={styles.h3}>Desarmar una idea común</Text>
+              <Text style={styles.body}>{dim.recomendacion.desarmarIdea}</Text>
+            </>
+          )}
+
+          {/* Capa 3a — Argumento conceptual */}
+          <Text style={styles.h3}>Por qué importa</Text>
+          <Text style={styles.body}>{dim.recomendacion.argumentoConceptual}</Text>
+
+          {/* Capa 3b — Costo cotidiano */}
+          <View style={{ backgroundColor: C.tealSoft, padding: 8, borderRadius: 4, marginBottom: 8 }}>
+            <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: C.navy, marginBottom: 2 }}>
+              CÓMO SE SIENTE EN EL DÍA A DÍA
+            </Text>
+            <Text style={{ fontSize: 9, color: C.texto, lineHeight: 1.5 }}>
+              {dim.recomendacion.costoCotidiano}
+            </Text>
+          </View>
+
+          {/* Capa 3c — Principios conectados */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
+            {dim.recomendacion.principiosConectados.map((p) => (
+              <Text
+                key={p}
+                style={{
+                  fontSize: 8,
+                  fontFamily: "Helvetica-Bold",
+                  color: C.navy,
+                  backgroundColor: "#FFF",
+                  borderColor: C.navy,
+                  borderWidth: 0.5,
+                  padding: "2 6",
+                  borderRadius: 8,
+                  marginRight: 4,
+                }}
+              >
+                {PRINCIPIO_LABEL[p]}
+              </Text>
+            ))}
+          </View>
+
+          {/* Capa 4 — Cómo moverte: 3 lentes */}
+          <Text style={styles.h3}>Cómo moverte</Text>
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: C.teal, marginBottom: 2 }}>
+              Mirando al cliente
+            </Text>
+            <Text style={{ fontSize: 9, color: C.texto, lineHeight: 1.5, marginBottom: 6 }}>
+              {dim.recomendacion.comoMoverte.cliente}
+            </Text>
+          </View>
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: C.teal, marginBottom: 2 }}>
+              Mirando al contexto
+            </Text>
+            <Text style={{ fontSize: 9, color: C.texto, lineHeight: 1.5, marginBottom: 6 }}>
+              {dim.recomendacion.comoMoverte.contexto}
+            </Text>
+          </View>
+          <View>
+            <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: C.teal, marginBottom: 2 }}>
+              Mirando la competitividad
+            </Text>
+            <Text style={{ fontSize: 9, color: C.texto, lineHeight: 1.5 }}>
+              {dim.recomendacion.comoMoverte.competitividad}
+            </Text>
+          </View>
+
+          <View style={styles.banda} />
+        </Page>
+      ))}
 
       {/* Página 4 — Tecnología y datos */}
       <Page size="A4" style={styles.page}>

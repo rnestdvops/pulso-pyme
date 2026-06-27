@@ -16,10 +16,13 @@ import {
 } from "@/lib/oc-engine/scoring";
 import {
   construirRecomendaciones,
+  RECOMENDACIONES,
   RECOMENDACIONES_TEC,
   RECOMENDACIONES_IA,
   NIVEL_TEC_LABEL,
 } from "@/lib/oc-engine/recommendations";
+import { pickTopBajas } from "@/lib/oc-engine/recomendaciones-expandidas";
+import { RecomendacionExpandidaCard } from "./RecomendacionExpandidaCard";
 import { CircularGauge } from "./CircularGauge";
 import { ScatterEcosistema } from "./ScatterEcosistema";
 import { KitConversacionPDF } from "./KitConversacionPDF";
@@ -62,6 +65,16 @@ export function ResultadosStep() {
   const cards = useMemo(
     () => construirRecomendaciones(resultado.recomendaciones),
     [resultado.recomendaciones]
+  );
+
+  // Top 3 dimensiones bajas para el formato expandido (Anexo §5.2 — pantalla top 3, PDF todas).
+  const dimensionesBajas = useMemo(
+    () =>
+      pickTopBajas(
+        resultado.dimensiones.map((d) => ({ id: d.id, iao: d.iao, etiqueta: d.etiqueta })),
+        { umbral: 50, limite: 3 },
+      ),
+    [resultado.dimensiones],
   );
 
   const respuestasTecNorm = useMemo(
@@ -153,6 +166,10 @@ export function ResultadosStep() {
         fecha={new Date().toLocaleDateString("es-UY", {
           day: "numeric", month: "long", year: "numeric",
         })}
+        dimensionesBajasExpandidas={pickTopBajas(
+          resultado.dimensiones.map((d) => ({ id: d.id, iao: d.iao, etiqueta: d.etiqueta })),
+          { umbral: 50 } // sin límite — PDF incluye todas las bajas (anexo §5.2)
+        )}
       />
     ).toBlob();
 
@@ -204,18 +221,42 @@ export function ResultadosStep() {
         </div>
       </section>
 
-      {/* Recomendaciones */}
+      {/* Recomendaciones expandidas (anexo §3) — solo si hay dimensiones bajas */}
+      {dimensionesBajas.length > 0 && (
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="font-heading text-base font-semibold text-foreground">
+              ¿Por dónde empezar?
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Las {dimensionesBajas.length} dimensiones que más conviene mirar primero, según tu pulso.
+              Cliqueá "Profundizar" en cada una para abrir la lectura completa.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {dimensionesBajas.map((item) => (
+              <RecomendacionExpandidaCard key={item.dimensionId} item={item} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Recomendaciones plain text (fallback / medio-alto) */}
       <section className="space-y-4">
         <div className="space-y-1">
           <h2 className="font-heading text-base font-semibold text-foreground">
-            ¿Por dónde empezar?
+            {dimensionesBajas.length > 0
+              ? "Otras palancas a mirar"
+              : "¿Por dónde empezar?"}
           </h2>
           <p className="text-xs text-muted-foreground">
             Máximo 3 recomendaciones. Mejor hacer una bien que dejar todo a la mitad.
           </p>
         </div>
         <div className="space-y-3">
-          {cards.map((rec) => (
+          {cards
+            .filter((rec) => !dimensionesBajas.some((b) => b.dimensionId === rec.dimension))
+            .map((rec) => (
             <article
               key={rec.dimension}
               className="rounded-2xl bg-card p-5 shadow-sm ring-1 ring-border/50"
